@@ -1,3 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+.curved-edge {
+    --c: 70px; /* control the curvature (works with percentage) */
+    height: 200px;
+    aspect-ratio: 3/2;
+    /* you can also update the 60%  */
+    mask: radial-gradient(60% var(--c) at bottom,#0000 calc(100% - 2px),#000);
+    background: #40C0CB;
+  }
