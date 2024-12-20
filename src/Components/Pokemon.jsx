@@ -53,6 +53,7 @@ const Pokemon = () => {
     }
     if(e.target.value == "Prev"){
         fetchPokemon(prevURL)
+        console.log(prevURL)
     }
     window.scrollTo({
         top: 0,
