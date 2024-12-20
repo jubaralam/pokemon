@@ -24,7 +24,7 @@ const PokemonCard = ({ id, name, height, img, types,stats }) => {
         </div>
         <div>
           <p>Id: #{id}</p>
-          {/* <p>Type: {types[0].type.name}</p> */}
+   
         <h3 className="text-base font-bold text-gray-800">
     
            Name: {name} 

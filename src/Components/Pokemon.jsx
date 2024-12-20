@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import PokemonCard from "./PokemonCard";
 import Loading from "./Loading";
+import Button from "./Button";
 
 const Pokemon = () => {
   const [pokemonData, setPokemonData] = useState([]);
@@ -9,12 +10,11 @@ const Pokemon = () => {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
   const [nextURL, setNextURL] = useState("");
-  const [isFetching, setIsFetching] = useState(false);
+  const [prevURL, setPrevURL] = useState("");
+
   const API = "https://pokeapi.co/api/v2/pokemon?limit=24";
 
   const fetchPokemon = async (fetchURl) => {
-    // if (!nextUrl) return; // Stop fetching if no next URL
-    // setIsFetching(true);
     try {
       const res = await fetch(fetchURl);
 
@@ -29,47 +29,47 @@ const Pokemon = () => {
 
       const detailedResponse = await Promise.all(detailedPokemondata);
 
-      //   setPokemonData(detailedResponse);
-      setPokemonData((prev) => [...prev, ...detailedResponse]);
+      setPokemonData(detailedResponse);
+      //   setPokemonData((prev) => [...prev, ...detailedResponse]);
+
       setNextURL(data.next);
+      setPrevURL(data.previous);
       console.log(data.next);
 
       setLoading(false);
-      setIsFetching(false);
     } catch (error) {
       setLoading(false);
       console.log(error);
       setError(error);
-      setIsFetching(false);
     }
   };
   console.log(pokemonData);
 
+  const handleClick = (e) => {
+    // alert("Button clicked!",e);
+    console.log(e.target.value);
+    if(e.target.value == "Next"){
+        fetchPokemon(nextURL)
+    }
+    if(e.target.value == "Prev"){
+        fetchPokemon(prevURL)
+    }
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth", 
+      });
+  };
   useEffect(() => {
     fetchPokemon(API);
-
-    const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 100
-      ) {
-        fetchPokemon(nextURL);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [search, type, pokemonData, nextURL]);
+  }, [search, type]);
 
   let searchData = pokemonData.filter((currPokemon) =>
     currPokemon.name.toLowerCase().includes(search.toLowerCase())
   );
   const filterData = pokemonData.filter((currPokemon) =>
-    // console.log(currPokemon.types[0].type.name)
     currPokemon.types[0].type.name.toLowerCase().includes(type.toLowerCase())
   );
   searchData = filterData;
-  console.log("filter by type", filterData);
 
   if (loading) {
     return <Loading />;
@@ -108,13 +108,16 @@ const Pokemon = () => {
       <div className="grid lg:grid-cols-4  md:grid-cols-3 sm:grid-cols-1 gap-4 my-5  mx-auto px-6">
         {searchData?.map((pokemon) => (
           <PokemonCard
-            key={pokemon.id}
+            key={pokemon.name}
             img={pokemon.sprites.other.dream_world.front_default}
             {...pokemon}
           />
         ))}
       </div>
-      {isFetching && <Loading />}
+      <div className="flex items-center justify-center bg-gray-100">
+        <Button text="Prev" onClick={handleClick} />
+        <Button text="Next" onClick={handleClick} />
+      </div>
     </div>
   );
 };
