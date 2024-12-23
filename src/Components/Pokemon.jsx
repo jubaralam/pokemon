@@ -5,6 +5,7 @@ import Button from "./Button";
 
 const Pokemon = () => {
   const [pokemonData, setPokemonData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -14,74 +15,75 @@ const Pokemon = () => {
 
   const API = "https://pokeapi.co/api/v2/pokemon?limit=24";
 
-  const fetchPokemon = async (fetchURl) => {
+  const fetchPokemon = async (fetchURL) => {
     try {
-      const res = await fetch(fetchURl);
-
+      setLoading(true);
+      const res = await fetch(fetchURL);
       const data = await res.json();
-      console.log(data);
 
-      const detailedPokemondata = data.results?.map(async (pokemon) => {
-        const res = await fetch(pokemon.url);
-        const data = await res.json();
-        return data;
-      });
+      const detailedPokemonData = await Promise.all(
+        data.results.map(async (pokemon) => {
+          try {
+            const res = await fetch(pokemon.url);
+            return await res.json();
+          } catch {
+            return null;
+          }
+        })
+      );
 
-      const detailedResponse = await Promise.all(detailedPokemondata);
-
-      setPokemonData(detailedResponse);
-      //   setPokemonData((prev) => [...prev, ...detailedResponse]);
-
+      const validData = detailedPokemonData.filter((pokemon) => pokemon);
+      setPokemonData(validData);
+      setFilteredData(validData);
       setNextURL(data.next);
       setPrevURL(data.previous);
-      console.log(data.next);
-
       setLoading(false);
-    } catch (error) {
+    } catch (err) {
+      setError(err);
       setLoading(false);
-      console.log(error);
-      setError(error);
     }
   };
-  console.log(pokemonData);
 
   const handleClick = (e) => {
-    // alert("Button clicked!",e);
-    console.log(e.target.value);
-    if(e.target.value == "Next"){
-        fetchPokemon(nextURL)
-    }
-    if(e.target.value == "Prev"){
-        fetchPokemon(prevURL)
-        console.log(prevURL)
-    }
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth", 
-      });
+    if (e.target.value === "Next" && nextURL) fetchPokemon(nextURL);
+    if (e.target.value === "Prev" && prevURL) fetchPokemon(prevURL);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Fetch data only on initial render
   useEffect(() => {
     fetchPokemon(API);
-  }, [search, type]);
+  }, []);
 
-  let searchData = pokemonData.filter((currPokemon) =>
-    currPokemon.name.toLowerCase().includes(search.toLowerCase())
-  );
-  const filterData = pokemonData.filter((currPokemon) =>
-    currPokemon.types[0].type.name.toLowerCase().includes(type.toLowerCase())
-  );
-  searchData = filterData;
+  // Filter data when search or type changes
+  useEffect(() => {
+    let updatedData = pokemonData;
 
-  if (loading) {
-    return <Loading />;
-  }
+    // Apply filter by type if a type is selected
+    if (type) {
+      updatedData = updatedData.filter((currPokemon) =>
+        currPokemon.types.some((t) =>
+          t.type.name.toLowerCase().includes(type.toLowerCase())
+        )
+      );
+    }
 
-  if (error) {
-    return <h1>{error.message}</h1>;
-  }
+    // Apply search filter if search input is not empty
+    if (search) {
+      updatedData = updatedData.filter((currPokemon) =>
+        currPokemon.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    setFilteredData(updatedData);
+  }, [search, type, pokemonData]);
+
+  if (loading) return <Loading />;
+  if (error) return <h1>{error.message}</h1>;
+
   return (
     <div>
-      <div className=" text-center ">
+      <div className="text-center">
         <input
           type="text"
           placeholder="Search Pokemon"
@@ -89,25 +91,20 @@ const Pokemon = () => {
           onChange={(e) => setSearch(e.target.value)}
           className="w-[300px] py-2 px-3 rounded-lg border-gray-400 border-2"
         />
-
         <select
           name="type"
-          id="type"
           onChange={(e) => setType(e.target.value)}
           className="py-2 px-3"
         >
           <option value="">Filter By Type</option>
           <option value="grass">Grass</option>
-          <option value="poison">Poison</option>
           <option value="fire">Fire</option>
-          <option value="flying">Flying</option>
           <option value="water">Water</option>
-          <option value="bug">Bug</option>
-          <option value="normal">Normal</option>
+          {/* Add more types as needed */}
         </select>
       </div>
-      <div className="grid lg:grid-cols-4  md:grid-cols-3 sm:grid-cols-1 gap-4 my-5  mx-auto px-6">
-        {searchData?.map((pokemon) => (
+      <div className="grid lg:grid-cols-4 md:grid-cols-3 sm:grid-cols-1 gap-4 my-5 mx-auto px-6">
+        {filteredData.map((pokemon) => (
           <PokemonCard
             key={pokemon.name}
             img={pokemon.sprites.other.dream_world.front_default}
@@ -116,7 +113,7 @@ const Pokemon = () => {
         ))}
       </div>
       <div className="flex items-center justify-center bg-gray-100">
-        <Button text="Prev" onClick={handleClick} />
+        <Button text="Prev" onClick={handleClick}  />
         <Button text="Next" onClick={handleClick} />
       </div>
     </div>
